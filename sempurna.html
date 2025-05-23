@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sempurna - Andra & The Backbone (Custom Controls)</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #FFC0CB; /* Warna pink */
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            color: #333;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .music-player {
+            background-color: #fdf5e6;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .song-info h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            color: #222;
+        }
+
+        .song-info h2 {
+            font-size: 1em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        /* Sembunyikan audio player default */
+        #audioPlayer {
+            display: none;
+        }
+
+        .custom-controls {
+            margin-bottom: 15px;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+            padding: 0 5px; /* Padding agar tidak terlalu mepet */
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            margin-bottom: 15px;
+            cursor: pointer; /* Menunjukkan bisa diklik */
+        }
+
+        /* Styling untuk input range (seek bar) */
+        input[type="range"] {
+            -webkit-appearance: none; /* Hapus tampilan default WebKit/Blink */
+            appearance: none;
+            width: 100%;
+            height: 8px; /* Tinggi track */
+            background: #d3d3d3; /* Warna track dasar */
+            outline: none;
+            border-radius: 5px; /* Rounded track */
+            margin: 0;
+        }
+
+        /* Thumb (bulatan slider) untuk Webkit/Blink (Chrome, Safari, Opera, Edge Chromium) */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px; /* Lebar thumb */
+            height: 18px; /* Tinggi thumb */
+            background: #555; /* Warna thumb */
+            border-radius: 50%; /* Bentuk lingkaran */
+            cursor: pointer;
+            border: 2px solid #fdf5e6; /* Border agar terlihat di atas track */
+            margin-top: -5px; /* Posisi vertikal thumb agar pas di tengah track */
+        }
+
+        /* Thumb untuk Firefox */
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #555;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fdf5e6;
+        }
+         /* Track untuk Firefox */
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #d3d3d3;
+            border-radius: 5px;
+            border: none; /* Hilangkan border default Firefox */
+        }
+
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; /* Jarak antar tombol */
+        }
+
+        .control-button {
+            background-color: transparent;
+            border: 2px solid #555;
+            border-radius: 50%; /* Membuat tombol bulat */
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            padding: 0;
+            transition: background-color 0.2s;
+        }
+        .control-button svg {
+            width: 20px; /* Ukuran ikon di dalam tombol */
+            height: 20px;
+            fill: #333; /* Warna ikon */
+        }
+
+        .play-pause-button {
+            width: 60px;
+            height: 60px;
+        }
+        .play-pause-button svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .control-button:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .lyrics-container {
+            height: 180px; /* Kurangi tinggi untuk memberi ruang kontrol */
+            overflow-y: auto;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #fffaf0;
+            text-align: left;
+            scroll-behavior: smooth;
+            box-sizing: border-box;
+        }
+
+        .lyric-line {
+            padding: 6px 5px;
+            margin-bottom: 4px;
+            font-size: 1em;
+            line-height: 1.4;
+            transition: background-color 0.3s, color 0.3s, transform 0.3s;
+            border-radius: 5px;
+        }
+
+        .lyric-line.active {
+            background-color: #ffe0b2;
+            color: #d9534f;
+            font-weight: bold;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <div class="music-player">
+        <div class="song-info">
+            <h1>Sempurna</h1>
+            <h2>Andra & The Backbone</h2>
+        </div>
+
+        <audio id="audioPlayer">
+            <source src="sempurna.mp3" type="audio/mpeg">
+            Browser Anda tidak mendukung elemen audio.
+        </audio>
+
+        <div class="custom-controls">
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalDuration">0:00</span>
+            </div>
+            <div class="progress-bar-container">
+                <input type="range" id="seekBar" value="0" step="1">
+            </div>
+            <div class="buttons-container">
+                <button class="control-button" id="prevButton" aria-label="Previous Track">
+                    <svg viewBox="0 0 24 24"><path d="M7 6 L7 18 L5 18 L5 6 L7 6 M16.5 12 L9 18 L9 6 L16.5 12 Z"></path></svg>
+                </button>
+                <button class="control-button play-pause-button" id="playPauseButton" aria-label="Play">
+                    <!-- Ikon Play (akan diganti dengan Pause via JS) -->
+                    <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                    <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                </button>
+                <button class="control-button" id="nextButton" aria-label="Next Track">
+                     <svg viewBox="0 0 24 24"><path d="M17 6 L17 18 L19 18 L19 6 L17 6 M7.5 12 L15 18 L15 6 L7.5 12 Z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="lyrics-container">
+            <div id="lyricsDisplay">
+                <!-- Lirik akan muncul di sini -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playPauseButton = document.getElementById('playPauseButton');
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+            const seekBar = document.getElementById('seekBar');
+            const currentTimeDisplay = document.getElementById('currentTime');
+            const totalDurationDisplay = document.getElementById('totalDuration');
+
+            const lyricsDisplay = document.getElementById('lyricsDisplay');
+            const lyricsContainer = lyricsDisplay.parentElement;
+
+            const lyricsData = [
+                { time: 0.5,  text: "..." },
+                { time: 9.8,  text: "Kau begitu sempurna" },
+                { time: 14.2, text: "Di mataku kau begitu indah" },
+                { time: 18.8, text: "Kau membuat diriku akan s'lalu memujamu" },
+                { time: 25.0, text: "♪" },
+                { time: 29.0, text: "Di setiap langkahku" },
+                { time: 33.5, text: "Kukan s'lalu memikirkan dirimu" },
+                { time: 38.0, text: "Tak bisa kubayangkan hidupku tanpa cintamu" },
+                { time: 44.0, text: "♪" },
+                { time: 48.5, text: "Janganlah kau tinggalkan diriku" },
+                { time: 53.0, text: "Takkan mampu menghadapi semua" },
+                { time: 58.0, text: "Hanya bersamamu ku akan bisa" },
+                { time: 1*60 + 3.0,  text: "Kau adalah darahku" },
+                { time: 1*60 + 7.8,  text: "Kau adalah jantungku" },
+                { time: 1*60 + 12.5, text: "Kau adalah hidupku, lengkapi diriku" },
+                { time: 1*60 + 18.0, text: "Oh sayangku kau begitu..." },
+                { time: 1*60 + 24.0, text: "Sempurna" },
+                { time: 1*60 + 29.0, text: "Sempurna" },
+                { time: 1*60 + 35.5, text: "Kau genggam tanganku" },
+                { time: 1*60 + 39.5, text: "Saat diriku lemah dan terjatuh" },
+                { time: 1*60 + 44.5, text: "Kau bisikkan kata dan hapus semua sesalku" },
+                { time: 1*60 + 51.0, text: "♪" },
+                { time: 1*60 + 54.5, text: "Janganlah kau tinggalkan diriku" },
+                { time: 1*60 + 59.2, text: "Takkan mampu menghadapi semua" },
+                { time: 2*60 + 4.2,  text: "Hanya bersamamu ku akan bisa" },
+                { time: 2*60 + 9.2,  text: "Kau adalah darahku" },
+                { time: 2*60 + 14.0, text: "Kau adalah jantungku" },
+                { time: 2*60 + 18.8, text: "Kau adalah hidupku, lengkapi diriku" },
+                { time: 2*60 + 24.2, text: "Oh sayangku kau begitu..." },
+                { time: 2*60 + 30.5, text: "Sempurna" },
+                { time: 2*60 + 35.2, text: "Sempurna" },
+                { time: 2*60 + 50.8, text: "Janganlah kau tinggalkan diriku" },
+                { time: 2*60 + 55.5, text: "Takkan mampu menghadapi semua" },
+                { time: 3*60 + 0.5,  text: "Hanya bersamamu ku akan bisa" },
+                { time: 3*60 + 5.5,  text: "Kau adalah darahku" },
+                { time: 3*60 + 10.2, text: "Kau adalah jantungku" },
+                { time: 3*60 + 15.0, text: "Kau adalah hidupku, lengkapi diriku" },
+                { time: 3*60 + 20.5, text: "Oh sayangku kau begitu..." },
+                { time: 3*60 + 25.5, text: "Kau adalah darahku" },
+                { time: 3*60 + 30.0, text: "Kau adalah jantungku" },
+                { time: 3*60 + 34.8, text: "Kau adalah hidupku, lengkapi diriku" },
+                { time: 3*60 + 40.0, text: "Oh sayangku kau begitu..." },
+                { time: 3*60 + 45.0, text: "Sayangku kau begitu..." },
+                { time: 3*60 + 51.0, text: "Sempurna" },
+                { time: 3*60 + 56.0, text: "Sempurna" },
+                { time: 4*60 + 1.0, text: "..." },
+            ];
+
+            lyricsData.forEach((line, index) => {
+                const p = document.createElement('p');
+                p.textContent = line.text;
+                p.classList.add('lyric-line');
+                p.setAttribute('data-time', line.time);
+                p.id = `lyric-${index}`;
+                lyricsDisplay.appendChild(p);
+            });
+
+            let currentLineIndex = -1;
+
+            // Fungsi format waktu (detik -> MM:SS)
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            // Event Listener untuk tombol Play/Pause
+            playPauseButton.addEventListener('click', () => {
+                if (audioPlayer.paused || audioPlayer.ended) {
+                    audioPlayer.play();
+                } else {
+                    audioPlayer.pause();
+                }
+            });
+
+            // Ganti ikon saat play/pause
+            audioPlayer.addEventListener('play', () => {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'inline-block'; // atau 'block' jika SVGnya block-level
+                playPauseButton.setAttribute('aria-label', 'Pause');
+            });
+
+            audioPlayer.addEventListener('pause', () => {
+                playIcon.style.display = 'inline-block';
+                pauseIcon.style.display = 'none';
+                playPauseButton.setAttribute('aria-label', 'Play');
+            });
+            
+            // Inisialisasi ikon (jika autoplay atau state awal berbeda)
+            if (audioPlayer.paused) {
+                 playIcon.style.display = 'inline-block';
+                 pauseIcon.style.display = 'none';
+            } else {
+                 playIcon.style.display = 'none';
+                 pauseIcon.style.display = 'inline-block';
+            }
+
+
+            // Event Listener untuk tombol Previous (mundur 5 detik)
+            prevButton.addEventListener('click', () => {
+                audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 5);
+            });
+
+            // Event Listener untuk tombol Next (maju 5 detik)
+            nextButton.addEventListener('click', () => {
+                audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 5);
+            });
+
+            // Update seek bar dan waktu saat lagu berjalan
+            audioPlayer.addEventListener('timeupdate', () => {
+                const currentTime = audioPlayer.currentTime;
+                const duration = audioPlayer.duration;
+
+                if (!isNaN(duration)) {
+                    seekBar.value = currentTime;
+                    currentTimeDisplay.textContent = formatTime(currentTime);
+                }
+
+                // Lirik highlighting (sama seperti sebelumnya)
+                let newCurrentLineIndex = -1;
+                for (let i = 0; i < lyricsData.length; i++) {
+                    if (currentTime >= lyricsData[i].time) {
+                        if (i + 1 < lyricsData.length) {
+                            if (currentTime < lyricsData[i+1].time) {
+                                newCurrentLineIndex = i; break;
+                            }
+                        } else {
+                            newCurrentLineIndex = i; break;
+                        }
+                    }
+                }
+                if (newCurrentLineIndex !== currentLineIndex) {
+                    if (currentLineIndex !== -1) {
+                        const prevLine = document.getElementById(`lyric-${currentLineIndex}`);
+                        if (prevLine) prevLine.classList.remove('active');
+                    }
+                    if (newCurrentLineIndex !== -1) {
+                        const activeLineElement = document.getElementById(`lyric-${newCurrentLineIndex}`);
+                        if (activeLineElement) {
+                            activeLineElement.classList.add('active');
+                            const lineTop = activeLineElement.offsetTop - lyricsContainer.offsetTop;
+                            const containerHeight = lyricsContainer.clientHeight;
+                            const lineHeight = activeLineElement.clientHeight;
+                            lyricsContainer.scrollTop = lineTop - (containerHeight / 2) + (lineHeight / 2);
+                        }
+                    }
+                    currentLineIndex = newCurrentLineIndex;
+                }
+            });
+
+            // Saat metadata lagu sudah termuat (untuk durasi total)
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                if (!isNaN(audioPlayer.duration)) {
+                    totalDurationDisplay.textContent = formatTime(audioPlayer.duration);
+                    seekBar.max = audioPlayer.duration;
+                }
+            });
+            
+            // Jika lagu sudah bisa dimainkan (kadang loadedmetadata belum cukup untuk durasi di beberapa browser/file)
+            audioPlayer.addEventListener('canplay', () => {
+                 if (!isNaN(audioPlayer.duration)) {
+                    totalDurationDisplay.textContent = formatTime(audioPlayer.duration);
+                    seekBar.max = audioPlayer.duration;
+                }
+            });
+
+
+            // Mengubah posisi lagu saat seek bar digeser
+            seekBar.addEventListener('input', () => {
+                if (!isNaN(audioPlayer.duration)) {
+                    audioPlayer.currentTime = seekBar.value;
+                }
+            });
+
+            // Reset lirik saat lagu selesai
+            audioPlayer.addEventListener('ended', () => {
+                if (currentLineIndex !== -1) {
+                    const lastLine = document.getElementById(`lyric-${currentLineIndex}`);
+                    if (lastLine) lastLine.classList.remove('active');
+                }
+                currentLineIndex = -1;
+                lyricsContainer.scrollTop = 0;
+                // Opsi: Reset seekbar dan waktu
+                // seekBar.value = 0;
+                // currentTimeDisplay.textContent = formatTime(0);
+                // Set ikon ke play
+                playIcon.style.display = 'inline-block';
+                pauseIcon.style.display = 'none';
+                playPauseButton.setAttribute('aria-label', 'Play');
+            });
+            
+            // Penanganan seeked (sama seperti sebelumnya)
+            audioPlayer.addEventListener('seeked', () => {
+                if (currentLineIndex !== -1) {
+                    const currentActive = document.getElementById(`lyric-${currentLineIndex}`);
+                    if (currentActive) currentActive.classList.remove('active');
+                }
+                currentLineIndex = -1;
+                const event = new Event('timeupdate'); // Trigger timeupdate untuk update lirik
+                audioPlayer.dispatchEvent(event);
+            });
+        });
+    </script>
+</body>
+</html>
